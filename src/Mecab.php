@@ -53,15 +53,22 @@ class Mecab
      * @param string $text
      * @return \Generator|\Wandu\Mecab\Node[]
      */
-    public function parse($text)
+    public function parseToGenerator($text)
     {
         $node = mecab_sparse_tonode($this->mecab, $text);
         while ($node) {
-             yield [
-                 new Node(mecab_node_toarray($node)),
-             ];
+            yield new Node(mecab_node_toarray($node));
             $node = mecab_node_next($node);
         }
+    }
+
+    /**
+     * @param string $text
+     * @return array|\Wandu\Mecab\Node[]
+     */
+    public function parse($text)
+    {
+        return iterator_to_array($this->parseToGenerator($text));
     }
 
     /**

@@ -17,8 +17,6 @@
  * mecab_nbest_next_tostr
  * mecab_nbest_sparse_tostr
  *
- * mecab_node_bnext
- * mecab_node_enext         
  * mecab_node_lpath
  * mecab_node_rpath
  * 
@@ -84,6 +82,20 @@ function mecab_node_prev(resource $node) {}
  * @return resource
  */
 function mecab_node_next(resource $node) {}
+
+/**
+ * Begin of Node
+ * @param resource $node
+ * @return resource
+ */
+function mecab_node_bnext(resource $node) {}
+
+/**
+ * End of Node
+ * @param resource $node
+ * @return resource
+ */
+function mecab_node_enext(resource $node) {}         
 
 /**
  * @param resource $node

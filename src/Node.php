@@ -51,6 +51,9 @@ class Node
     /** @var int */
     public $cost;
     
+    /** @var array */
+    private $tags;
+    
     public function __construct(array $attributes = [])
     {
         foreach ($attributes as $name => $attribute) {
@@ -88,5 +91,21 @@ class Node
     public function getStatus()
     {
         return $this->stat;
+    }
+
+    /**
+     * @param string $tag
+     * @return boolean
+     */
+    public function hasTag($tag)
+    {
+        if (!isset($this->tags)) {
+            if ($this->feature) {
+                $this->tags = explode(',', $this->feature);
+            } else {
+                $this->tags = [];
+            }
+        }
+        return in_array($tag, $this->tags);
     }
 }
