@@ -1,6 +1,10 @@
 <?php
 namespace Wandu\Mecab;
 
+use MeCab\Tagger;
+use RuntimeException;
+use function mecab\version;
+
 class Mecab
 {
     const STATUS_NODE = 0;
@@ -13,11 +17,19 @@ class Mecab
      */
     public static function version()
     {
-        return mecab_version();
+        if (function_exists("mecab\\version")) {
+            return version();
+        } elseif (function_exists('mecab_version')) {
+            return mecab_version();
+        }
+        return 'unknown';
     }
 
-    /** @var resource */
+    /** @var resource|\MeCab\Tagger */
     protected $mecab;
+    
+    /** @var boolean */
+    protected $isMecabResource;
 
     /**
      * @param string $dictPath
@@ -27,17 +39,28 @@ class Mecab
         if ($dictPath) {
             ini_set('mecab.default_dicdir', $dictPath);
         }
-        $this->mecab = mecab_new([
+        $args = [
             '--bos-format' => "BOS\n",
             '--eos-format' => "EOS\n",
             '--node-format' => "NOD (%H): %m\n",
             '--unk-format' => "UNK (%H): %m\n",
-        ]);
+        ];
+        if (class_exists(Tagger::class)) {
+            $this->mecab = new Tagger($args);
+            $this->isMecabResource = false;
+        } elseif (function_exists('mecab_new')) {
+            $this->mecab = mecab_new($args);
+            $this->isMecabResource = true;
+        } else {
+            throw new RuntimeException('cannot use mecab.');
+        }
     }
     
     public function __destruct()
     {
-        mecab_destroy($this->mecab);
+        if ($this->isMecabResource) {
+            mecab_destroy($this->mecab);
+        }
     }
 
     /**
@@ -46,7 +69,11 @@ class Mecab
      */
     public function parseToString($text)
     {
-        return mecab_sparse_tostr($this->mecab, $text);
+        if ($this->isMecabResource) {
+            return mecab_sparse_tostr($this->mecab, $text);
+        } else {
+            return $this->mecab->parseToString($text);
+        }
     }
 
     /**
@@ -55,10 +82,18 @@ class Mecab
      */
     public function parseToGenerator($text)
     {
-        $node = mecab_sparse_tonode($this->mecab, $text);
-        while ($node) {
-            yield new Node(mecab_node_toarray($node));
-            $node = mecab_node_next($node);
+        if ($this->isMecabResource) {
+            $node = mecab_sparse_tonode($this->mecab, $text);
+            while ($node) {
+                yield new Node(mecab_node_toarray($node));
+                $node = mecab_node_next($node);
+            }
+        } else {
+            $node = $this->mecab->parseToNode($text);
+            while ($node) {
+                yield new Node($node->toArray());
+                $node = $node->getNext();
+            }
         }
     }
 
@@ -77,6 +112,10 @@ class Mecab
      */
     public function split($text)
     {
-        return mecab_split($text);
+        if (function_exists("mecab\\split")) {
+            return \mecab\split($text);
+        } elseif (function_exists('mecab_split')) {
+            return mecab_split($text);
+        }
     }
 }
